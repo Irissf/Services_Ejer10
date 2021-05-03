@@ -30,33 +30,41 @@ namespace Services_Ejer10
         public int LeePuerto()
         {
             //si ponemos la \ en vez de / poner delante de la cadena de texto @ => @"C:\temp\puerto.txt"
-            using (StreamReader sr = new StreamReader("C:/temp/puerto.txt"))
+            try
             {
-                //intentamos leer una linea de texto
-                string line = sr.ReadLine();
-                //si la linea contiene algo
-                while (line != null)
+                using (StreamReader sr = new StreamReader("C:/temp/puerto.txt"))
                 {
-                    //Un número de puerto es válido si pertenece al rango de 0 a 65535.
-                    try
+                    //intentamos leer una linea de texto
+                    string line = sr.ReadLine();
+                    //si la linea contiene algo
+                    while (line != null)
                     {
-                        int num = Convert.ToInt32(line);
-                        if (num >= IPEndPoint.MinPort || num <= IPEndPoint.MaxPort) //puerto valor máximo y valor mínimo
-                        {   //el min es 0, por lo que lo de 10000 cambiaría
-                            return num;
+                        //Un número de puerto es válido si pertenece al rango de 0 a 65535.
+                        try
+                        {
+                            int num = Convert.ToInt32(line);
+                            if (num > 10000 || num <= IPEndPoint.MaxPort) //puerto valor máximo y valor mínimo
+                            {   //el min es 0, por lo que lo de 10000 cambiaría
+                                return num;
+                            }
+                            else
+                            {
+                                return 10000;
+                            }
                         }
-                        else
+                        catch (Exception)
                         {
                             return 10000;
                         }
                     }
-                    catch (Exception)
-                    {
-                        return 10000;
-                    }
                 }
             }
+            catch (Exception)
+            {
+                return 10000;
+            }
             return 10000;
+
         }
 
         /// <summary>
@@ -79,7 +87,7 @@ namespace Services_Ejer10
                     {
                         try
                         {
-                            if(ie.Port != info.Port)
+                            if (ie.Port != info.Port)
                             {
                                 sw.WriteLine("Ip:{0}, Port:{1}: {2}", ie.Address, ie.Port, m);
                             }
@@ -105,54 +113,38 @@ namespace Services_Ejer10
         /// función hiloCliente.Además se añadirá el socket de cliente a la colección clientes
         /// </summary>
         public void IniciaServicioChat()
+
         {
-            try
-            {
-                bool puertoCorrecto = false;
-                int puerto = LeePuerto();
-                while (!puertoCorrecto)
-                    if (puerto > 10000)
+            bool puertoCorrecto = false;
+            int puerto = LeePuerto();
+            while (!puertoCorrecto)
+                try
+                {
+                    IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), puerto);
+                    puertoCorrecto = true;
+
+                    Socket socketConexion = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    socketConexion.Bind(endpoint);
+                    socketConexion.Listen(2);
+
+                    while (true)
                     {
-                        try
-                        {
-                            IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), puerto);
-                            puertoCorrecto = true;
-
-                            Socket socketConexion = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                            socketConexion.Bind(endpoint);
-                            socketConexion.Listen(2);
-
-                            while (true)
-                            {
-                                Socket socketCliente = socketConexion.Accept();
-                                Thread hilos = new Thread(HiloCliente);
-                                hilos.Start(socketCliente);
-                            }
-                        }
-                        catch (SocketException e) when (e.ErrorCode == (int)SocketError.AddressAlreadyInUse)
-                        {
-                            if (puerto < IPEndPoint.MaxPort)
-                            {
-                                puerto++;
-                            }
-                            else
-                            {
-                                puerto = 10000;
-                            }
-                        }
-
+                        Socket socketCliente = socketConexion.Accept();
+                        Thread hilos = new Thread(HiloCliente);
+                        hilos.Start(socketCliente);
+                    }
+                }
+                catch (SocketException e) when (e.ErrorCode == (int)SocketError.AddressAlreadyInUse)
+                {
+                    if (puerto < IPEndPoint.MaxPort)
+                    {
+                        puerto++;
                     }
                     else
                     {
-                        //puerto no valido
-                        puertoCorrecto = true;
+                        puerto = 10000;
                     }
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
+                }
 
         }
 
@@ -198,11 +190,11 @@ namespace Services_Ejer10
                                 {
                                     for (int i = 0; i < clientes.Count; i++)
                                     {
-                                        if (clientes[i]== socketCliente)
+                                        if (clientes[i] == socketCliente)
                                         {
                                             clientes.RemoveAt(i);
                                             socketCliente.Close();
-                                            mensaje= "se ha desconectado";
+                                            mensaje = "se ha desconectado";
                                         }
                                     }
                                 }
@@ -229,7 +221,7 @@ namespace Services_Ejer10
         /*
          A continuación queda a la espera de el cliente le envíe algún mensaje. Si sucede esto, recoge el mensaje y lo
         reenvía al resto de los clientes llamando a la función envioMensaje.
-        
+
         Si el mensaje que envía el cliente es la palabra MELARGO se cerrará la conexión con dicho cliente y se 
         eliminará de la colección
         */
