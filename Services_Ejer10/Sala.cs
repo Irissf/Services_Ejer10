@@ -192,6 +192,21 @@ namespace Services_Ejer10
                         mensaje = sr.ReadLine();
                         if (mensaje != null)
                         {
+                            if (mensaje == "MELARGO")
+                            {
+                                lock (llave)
+                                {
+                                    for (int i = 0; i < clientes.Count; i++)
+                                    {
+                                        if (clientes[i]== socketCliente)
+                                        {
+                                            clientes.RemoveAt(i);
+                                            socketCliente.Close();
+                                            mensaje= "se ha desconectado";
+                                        }
+                                    }
+                                }
+                            }
                             lock (llave)
                             {
                                 //Curro me recomedó meterlo en un lock 
