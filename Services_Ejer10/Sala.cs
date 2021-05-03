@@ -68,13 +68,26 @@ namespace Services_Ejer10
         /// <param name="ie">para la ip y el puerto de cada uno de los clientes</param>
         public void EnvioMensaje(string m, IPEndPoint ie)
         {
+            IPEndPoint info;
             lock (llave)
             {
                 for (int i = 0; i < clientes.Count; i++)
                 {
+                    info = (IPEndPoint)clientes[i].RemoteEndPoint;
                     using (NetworkStream ns = new NetworkStream(clientes[i]))
                     using (StreamWriter sw = new StreamWriter(ns))
                     {
+                        try
+                        {
+                            if(ie.Port != info.Port)
+                            {
+                                sw.WriteLine("Ip:{0}, Port:{1}: {2}", ie.Address, ie.Port, m);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            clientes.RemoveAt(i);
+                        }
 
                     }
                 }
@@ -155,6 +168,7 @@ namespace Services_Ejer10
         {
             Socket socketCliente = (Socket)Socket;
             string mensaje;
+            bool cerrarChat = false;
 
             lock (llave)
             {
@@ -171,11 +185,29 @@ namespace Services_Ejer10
                 sw.WriteLine("Personas conectadas:{0} ", clientes.Count);
                 sw.Flush();
 
-                mensaje = sr.ReadLine();
-                while (mensaje != null)
+                while (!cerrarChat)
                 {
-                    EnvioMensaje(mensaje, info);
+                    try
+                    {
+                        mensaje = sr.ReadLine();
+                        if (mensaje != null)
+                        {
+                            lock (llave)
+                            {
+                                //Curro me recomedó meterlo en un lock 
+                                EnvioMensaje(mensaje, info);
+                            }
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        //al desconectarse el cliente devuelve null, como la variable sigue a false del while vuelve a intentar leer
+                        //y da error, lo solucionamos con el try catch, o buscariamos la forma de poner la variable a true 
+                    }
+
+
                 }
+
             }
         }
 
