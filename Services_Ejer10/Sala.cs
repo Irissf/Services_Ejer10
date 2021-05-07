@@ -29,6 +29,7 @@ namespace Services_Ejer10
         /// </summary>
         public int LeePuerto()
         {
+            Console.WriteLine("entro");
             //si ponemos la \ en vez de / poner delante de la cadena de texto @ => @"C:\temp\puerto.txt"
             try
             {
@@ -37,31 +38,30 @@ namespace Services_Ejer10
                     //intentamos leer una linea de texto
                     string line = sr.ReadLine();
                     //si la linea contiene algo
-                    while (line != null)
+                    if (line != null)
                     {
                         //Un número de puerto es válido si pertenece al rango de 0 a 65535.
                         try
                         {
                             int num = Convert.ToInt32(line);
-                            if (num > 10000 || num <= IPEndPoint.MaxPort) //puerto valor máximo y valor mínimo
-                            {   //el min es 0, por lo que lo de 10000 cambiaría
+                            if (num > 10000 && num <= IPEndPoint.MaxPort) //puerto valor máximo y valor mínimo
+                            {
+                                Console.WriteLine("Estoy entre 10000 y 65535");
                                 return num;
                             }
-                            else
-                            {
-                                return 10000;
-                            }
+                          
                         }
                         catch (Exception)
                         {
-                            return 10000;
+                          
                         }
                     }
                 }
             }
             catch (Exception)
             {
-                return 10000;
+                Console.WriteLine("No tengo archivo");
+                
             }
             return 10000;
 
@@ -79,21 +79,24 @@ namespace Services_Ejer10
             IPEndPoint info;
             lock (llave)
             {
-                for (int i = 0; i < clientes.Count; i++)
+                for (int i = clientes.Count; i > 0; i--)
                 {
-                    info = (IPEndPoint)clientes[i].RemoteEndPoint;
-                    using (NetworkStream ns = new NetworkStream(clientes[i]))
+                    info = (IPEndPoint)clientes[i-1].RemoteEndPoint;
+                    using (NetworkStream ns = new NetworkStream(clientes[i-1]))
                     using (StreamWriter sw = new StreamWriter(ns))
                     {
                         try
                         {
                             if (ie.Port != info.Port)
                             {
+                                sw.WriteLine("tamaño:{0}",clientes.Count );
                                 sw.WriteLine("Ip:{0}, Port:{1}: {2}", ie.Address, ie.Port, m);
+                                sw.Flush();
                             }
                         }
                         catch (Exception)
                         {
+                            Console.WriteLine("Entro aqui");
                             clientes.RemoveAt(i);
                         }
 
@@ -145,6 +148,10 @@ namespace Services_Ejer10
                         puerto = 10000;
                     }
                 }
+                catch (Exception)
+                {
+
+                }
 
         }
 
@@ -186,30 +193,24 @@ namespace Services_Ejer10
                         {
                             if (mensaje == "MELARGO")
                             {
-                                lock (llave)
-                                {
-                                    for (int i = 0; i < clientes.Count; i++)
-                                    {
-                                        if (clientes[i] == socketCliente)
-                                        {
-                                            clientes.RemoveAt(i);
-                                            socketCliente.Close();
-                                            mensaje = "se ha desconectado";
-                                        }
-                                    }
-                                }
+                                EnvioMensaje("Se ha desconectado", info);
                             }
-                            lock (llave)
+                            else
                             {
-                                //Curro me recomedó meterlo en un lock 
                                 EnvioMensaje(mensaje, info);
                             }
                         }
+
                     }
                     catch (IOException)
                     {
+                        Console.WriteLine("Entro aqui, se marchó"+ info.Port);
+                        
+                        //CREO QUE TENGO QUE ELIMINAR AQUI AL SUJETO. creo
+
                         //al desconectarse el cliente devuelve null, como la variable sigue a false del while vuelve a intentar leer
                         //y da error, lo solucionamos con el try catch, o buscariamos la forma de poner la variable a true 
+                        
                     }
 
 
