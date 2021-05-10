@@ -81,26 +81,32 @@ namespace Services_Ejer10
             {
                 for (int i = clientes.Count; i > 0; i--)
                 {
-                    info = (IPEndPoint)clientes[i-1].RemoteEndPoint;
-                    using (NetworkStream ns = new NetworkStream(clientes[i-1]))
-                    using (StreamWriter sw = new StreamWriter(ns))
+                    
                     {
-                        try
+                        info = (IPEndPoint)clientes[i - 1].RemoteEndPoint;
+                        using (NetworkStream ns = new NetworkStream(clientes[i - 1]))
+                        using (StreamWriter sw = new StreamWriter(ns))
                         {
-                            if (ie.Port != info.Port)
+                            try
                             {
-                                sw.WriteLine("tamaño:{0}",clientes.Count );
-                                sw.WriteLine("Ip:{0}, Port:{1}: {2}", ie.Address, ie.Port, m);
-                                sw.Flush();
+                                //sw.WriteLine("Tamaño colección:{0} y valor de i:{1}", clientes.Count, i-1);
+                                //sw.Flush();
+                                if (ie.Port != info.Port)
+                                {
+                                    sw.WriteLine("tamaño:{0}", clientes.Count);
+                                    sw.WriteLine("Ip:{0}, Port:{1}: {2}", ie.Address, ie.Port, m);
+                                    sw.Flush();
+                                }
                             }
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine("Entro aqui");
-                            clientes.RemoveAt(i);
-                        }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine(""+ e.Message);
 
+                            }
+
+                        }
                     }
+                   
                 }
             }
         }
@@ -181,7 +187,10 @@ namespace Services_Ejer10
             using (StreamWriter sw = new StreamWriter(ns))
             {
                 sw.WriteLine("Wellcome Puerto:{0} || IP:{1}", info.Port, info.Address);
-                sw.WriteLine("Personas conectadas:{0} ", clientes.Count);
+                lock (llave)
+                {
+                    sw.WriteLine("Personas conectadas:{0} ", clientes.Count);
+                }
                 sw.Flush();
 
                 while (!cerrarChat)
@@ -205,12 +214,15 @@ namespace Services_Ejer10
                     catch (IOException)
                     {
                         Console.WriteLine("Entro aqui, se marchó"+ info.Port);
-                        
-                        //CREO QUE TENGO QUE ELIMINAR AQUI AL SUJETO. creo
-
+                        socketCliente.Close();
+                        lock (llave)
+                        {
+                            clientes.Remove(socketCliente);
+                        }
+                        cerrarChat = true;
                         //al desconectarse el cliente devuelve null, como la variable sigue a false del while vuelve a intentar leer
                         //y da error, lo solucionamos con el try catch, o buscariamos la forma de poner la variable a true 
-                        
+
                     }
 
 
